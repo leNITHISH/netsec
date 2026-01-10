@@ -1,0 +1,20 @@
+
+student:
+  name: Nithish Siva Kumar
+  regno: 23BCE1230
+  course: Cryptography and Network Security Lab
+  course_code: BCSE309P
+  faculty: Prof. Karthika V
+  slot: L43+L44
+
+defaults:
+  plaintext: "HELLO NETSEC"
+
+experiments:
+  EX1A:
+    caesar:
+      key: "3"
+    vigenere:
+      key: "LEMON"
+    vernam:
+      key: "XMCKL"
