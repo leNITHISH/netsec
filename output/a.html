@@ -1,0 +1,204 @@
+<h1>Cryptography and Network Security Lab</h1>
+<p><strong>Name:</strong> Nithish Siva Kumar<br>
+<strong>Reg No:</strong> 23BCE1230<br>
+<strong>Course Code:</strong> BCSE309P<br>
+<strong>Faculty:</strong> Prof. Karthika V</p>
+<h1>EX1A</h1>
+<h2>Caesar Cipher</h2>
+<h3>Sender</h3>
+<pre><code class="language-python">import socket;
+
+def sender():
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM);
+
+    try:
+        s.connect((&quot;localhost&quot;, 42069));
+    except ConnectionRefusedError:
+        print(&quot;Hey the passwords are stored in plaintext&quot;);
+        return;
+    print(&quot;Ented the message you wanna send &quot;);
+    msd = input();
+    print(&quot;Enter the key you wanna encrypt in: &quot;);
+    key = int(input());
+    msd = caesae_e(msd, key);
+    print(f&quot;Encrypted message:\n{msd}&quot;);
+    s.send(msd.encode(encoding=&quot;ascii&quot;, errors=&quot;ignore&quot;));
+
+    s.close();
+
+def caesae_e(inp, key):
+    ret = [];
+    for c in inp:
+        ret.append(chr((ord(c)+key)%128));
+        
+    return &quot;&quot;.join(ret);
+sender();
+
+</code></pre>
+<h3>Receiver</h3>
+<pre><code class="language-python">import socket
+
+def reciever():
+    reci = socket.socket(socket.AF_INET, socket.SOCK_STREAM);
+
+    reci.bind((&quot;localhost&quot;, 42069));
+    reci.listen(1);
+    print(&quot;Listenin'...&quot;);
+    conn, addr = reci.accept();
+    print(&quot;Connected!&quot;);
+
+    payload = conn.recv(1024).decode(&quot;ascii&quot;);
+    print(f&quot;encrypted message: \&quot;{payload}\&quot;\n\nenter key to decrypt:&quot;);
+    key = int(input());
+    msd = caesar_d(payload, key);
+    print(f&quot;recieved message: \&quot;{msd}\&quot;&quot;);
+
+    conn.close();
+    reci.close();
+
+def caesar_d(string, key):
+    ret = [];
+    for c in string:
+        ret.append(chr((ord(c)-key)%128));
+
+    return &quot;&quot;.join(ret);
+reciever();
+
+</code></pre>
+<h3>Output</h3>
+<p><img src="caesar/send.png" alt="send">
+<img src="caesar/recv.png" alt="recv"></p>
+<h2>Vigenere Cipher</h2>
+<h3>Sender</h3>
+<pre><code class="language-python">import socket;
+
+def sender():
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM);
+    try:
+        s.connect((&quot;localhost&quot;, 42069));
+    except ConnectionRefusedError:
+        print(&quot;toodles&quot;);
+        return;
+    print(&quot;Enter the message you wanna send: &quot;);
+    string = input();
+    print(&quot;Enter the key phrase to encrypt: &quot;);
+    key  = input();
+    msg = vig_e(string, key);
+#   print(msg);
+    s.send(msg.encode(encoding=&quot;ascii&quot;, errors=&quot;ignore&quot;));
+    s.close();
+
+def vig_e(string, key):
+    ret = [];
+    n = len(string);
+    m = len(key);
+
+    for i in range(n):
+        ret.append(chr((ord(string[i])+ord(key[i%m]))%128));
+    return &quot;&quot;.join(ret);
+
+sender();
+
+</code></pre>
+<h3>Receiver</h3>
+<pre><code class="language-python">import socket
+
+def reciever(): #{
+    r = socket.socket(socket.AF_INET, socket.SOCK_STREAM);
+    r.bind((&quot;localhost&quot;, 42069));
+    r.listen(1);
+    print(&quot;Listenin'...&quot;);
+    conn, addr = r.accept();
+    print(&quot;Connected!&quot;);
+
+    pl = conn.recv(1024).decode(&quot;ascii&quot;);
+    print(f&quot;Encrypted message: \&quot;{pl}\&quot;\nenter key to decrypt:&quot;);
+    key = input();
+    msg = ver_d(pl, key);
+    print(f&quot;decrypted message: \&quot;{msg}\&quot;&quot;);
+    conn.close();
+    r.close();
+#}
+def ver_d(inp, key): #{
+    ret = [];
+    n = len(inp);
+    m = len(key);
+
+    for i, c in enumerate(inp): 
+        ret.append(chr((ord(c)-ord(key[i%m]))%128));
+
+    return &quot;&quot;.join(ret);
+#}
+reciever();
+
+</code></pre>
+<h3>Output</h3>
+<p><img src="vigenere/send.png" alt="send">
+<img src="vigenere/recv.png" alt="recv"></p>
+<h2>Vernam Cipher</h2>
+<h3>Sender</h3>
+<pre><code class="language-python">import socket;
+
+def sender():
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM);
+    try:
+        s.connect((&quot;localhost&quot;, 42069));
+    except ConnectionRefusedError:
+        print(&quot;toodles&quot;);
+        return;
+    print(&quot;Enter the message you wanna send: &quot;);
+    string = input();
+    print(&quot;Enter the key phrase to encrypt: &quot;);
+    key  = input();
+    msg = ver_e(string, key);
+    s.send(msg.encode(encoding=&quot;ascii&quot;, errors=&quot;ignore&quot;));
+    s.close();
+
+def ver_e(string, key):
+    ret = [];
+    n = len(string);
+    m = len(key);
+
+    for i, c in enumerate(string):
+        ret.append(chr((ord(c)^ord(key[127 &amp; i]))%128));
+    return &quot;&quot;.join(ret);
+
+sender();
+
+</code></pre>
+<h3>Receiver</h3>
+<pre><code class="language-python">import socket
+
+def reciever(): #{
+    r = socket.socket(socket.AF_INET, socket.SOCK_STREAM);
+    r.bind((&quot;localhost&quot;, 42069));
+    r.listen(1);
+    print(&quot;Listenin'...&quot;);
+    conn, addr = r.accept();
+    print(&quot;Connected!&quot;);
+
+    pl = conn.recv(1024).decode(&quot;ascii&quot;);
+    print(f&quot;Encrypted message: \&quot;{pl}\&quot;\nenter key to decrypt:&quot;);
+    key = input();
+    msg = ver_d(pl, key);
+    print(f&quot;decrypted message: \&quot;{msg}\&quot;&quot;);
+    conn.close();
+    r.close();
+#}
+
+
+def ver_d(string, key):
+    ret = [];
+    n = len(string);
+    m = len(key);
+
+    for i, c in enumerate(string):
+        ret.append(chr((ord(c)^ord(key[127 &amp; i]))%128));
+    return &quot;&quot;.join(ret);
+
+reciever();
+
+</code></pre>
+<h3>Output</h3>
+<p><img src="vernam/send.png" alt="send">
+<img src="vernam/recv.png" alt="recv"></p>

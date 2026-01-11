@@ -52,6 +52,7 @@ def new_cipher(name):
 
 import subprocess, yaml
 
+
 def run_cipher(cipher, key, plaintext):
     outdir = f"output/{cipher}"
     os.makedirs(outdir, exist_ok=True)
@@ -59,12 +60,76 @@ def run_cipher(cipher, key, plaintext):
     sender = f"ciphers/{cipher}/sender.py"
     receiver = f"ciphers/{cipher}/receiver.py"
 
-    send_cmd = f'printf "{plaintext}\\n{key}\\n" | freeze --wait --command "python {sender}" --output {outdir}/send.png'
-    recv_cmd = f'printf "{key}\\n" | freeze --wait --command "python {receiver}" --output {outdir}/recv.png'
+    recv_cmd = (
+        f'freeze --execute '
+        f'"bash -c \'printf \\"{key}\\n\\" | python {receiver} | sed -r \\"s/[\\x00-\\x1F\\x7F]//g\\"\'' 
+        f'" -o {outdir}/recv.png'
+    )
+
+    send_cmd = (
+        f'freeze --execute '
+        f'"bash -c \'printf \\"{plaintext}\\n{key}\\n\\" | python {sender} | sed -r \\"s/[\\x00-\\x1F\\x7F]//g\\"\'' 
+        f'" -o {outdir}/send.png'
+    )
 
     subprocess.Popen(recv_cmd, shell=True)
     time.sleep(1)
     subprocess.run(send_cmd, shell=True)
+
+
+def run_cipher_cinematic(cipher, key, plaintext):
+    base = os.path.abspath(f"ciphers/{cipher}")
+    outdir = f"output/{cipher}"
+    os.makedirs(outdir, exist_ok=True)
+
+    # switch to workspace 10
+    subprocess.run("xdotool key Super_L+0", shell=True)
+    time.sleep(0.5)
+
+    # open first terminal
+    subprocess.run("i3-msg exec alacritty", shell=True)
+    time.sleep(0.5)
+
+    # type receiver
+    subprocess.run(f'xdotool type "cd {base} && python receiver.py"', shell=True)
+    subprocess.run("xdotool key Return", shell=True)
+
+    time.sleep(1)
+
+    # split + new terminal
+    subprocess.run("i3-msg split v", shell=True)
+    subprocess.run("i3-msg exec alacritty", shell=True)
+    time.sleep(0.5)
+
+    # type sender
+    subprocess.run(f'xdotool type "cd {base} && python sender.py"', shell=True)
+    subprocess.run("xdotool key Return", shell=True)
+    time.sleep(0.5)
+
+    # type plaintext
+    subprocess.run(f'xdotool type "{plaintext}"', shell=True)
+    subprocess.run("xdotool key Return", shell=True)
+    time.sleep(0.2)
+
+    # type key
+    subprocess.run(f'xdotool type "{key}"', shell=True)
+    subprocess.run("xdotool key Return", shell=True)
+
+    time.sleep(1)
+
+    # screenshot sender
+    subprocess.run(f'freeze --execute "sleep 0.1" -o {outdir}/send.png', shell=True)
+
+    time.sleep(0.5)
+
+    # focus receiver pane
+    subprocess.run("i3-msg focus left", shell=True)
+    time.sleep(0.5)
+
+    subprocess.run(f'freeze --execute "sleep 0.1" -o {outdir}/recv.png', shell=True)
+
+    # leave workspace
+    subprocess.run("xdotool key Super_L+Left", shell=True)
 
 def build(exid):
     cfg = yaml.safe_load(open("experiments.yaml"))
