@@ -75,21 +75,28 @@ def reciever():
     print(f"Subkey 1: {b2h(k1)}")
     print(f"Subkey 2: {b2h(k2)}")
     
-    bits = h2b(payload_hex, 8)
-    ip_res = permutate(bits, IP)
-    print(f"IP Result: {b2h(ip_res)}")
+    final_plain = ""
+
+    for i in range(0, len(payload_hex), 2):
+        chunk_hex = payload_hex[i:i+2]
+        print(f"\n--- Decrypting Block {chunk_hex} ---")
+        
+        bits = h2b(chunk_hex, 8)
+        ip_res = permutate(bits, IP)
+        print(f"IP Result: {b2h(ip_res)}")
+        
+        fk1 = fk(ip_res, k2) 
+        switched = fk1[4:] + fk1[:4]
+        print(f"Round 1 (using K2): {b2h(switched)}")
+        
+        fk2 = fk(switched, k1)
+        print(f"Round 2 (using K1): {b2h(fk2)}")
+        
+        plaintext = permutate(fk2, IP_INV)
+        char_code = b2d(plaintext)
+        final_plain += chr(char_code)
     
-    fk1 = fk(ip_res, k2) 
-    switched = fk1[4:] + fk1[:4]
-    print(f"Round 1 (using K2): {b2h(switched)}")
-    
-    fk2 = fk(switched, k1)
-    print(f"Round 2 (using K1): {b2h(fk2)}")
-    
-    plaintext = permutate(fk2, IP_INV)
-    final_plain_hex = b2h(plaintext)
-    
-    print(f"decrypted message (hex): {final_plain_hex}")
+    print(f"\nFinal decrypted message: \"{final_plain}\"")
 
     conn.close()
     reci.close()

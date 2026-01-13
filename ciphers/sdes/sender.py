@@ -35,13 +35,10 @@ def generate_keys(key_bits):
     key = list(key_bits)
     p10 = permutate(key, P10)
     l, r = p10[:5], p10[5:]
-    
     l, r = shift(l, 1), shift(r, 1)
     k1 = permutate(l + r, P8)
-    
     l, r = shift(l, 2), shift(r, 2)
     k2 = permutate(l + r, P8)
-    
     return k1, k2
 
 def s_box_search(bits, sbox):
@@ -53,40 +50,42 @@ def fk(bits, subkey):
     l, r = bits[:4], bits[4:]
     ep = permutate(r, EP)
     xor_res = xor(ep, subkey)
-    
     l_xor, r_xor = xor_res[:4], xor_res[4:]
     s0_out = s_box_search(l_xor, S0)
     s1_out = s_box_search(r_xor, S1)
-    
     p4 = permutate(s0_out + s1_out, P4)
     return xor(l, p4) + r 
 
 def sender():
-    msg_hex = input("enter message(8 bit hex): ")
-    key_hex = input("enter key(10 bit hex): ")
+    msg_str = input("enter message(4 chars): ")
+    key_hex = input("enter key(10b hex <x400): ")
 
-    bits = h2b(msg_hex, 8)
     key_bits = h2b(key_hex, 10)
-
     k1, k2 = generate_keys(key_bits)
     print(f"Subkey 1: {b2h(k1)}")
     print(f"Subkey 2: {b2h(k2)}")
 
-    ip_res = permutate(bits, IP)
-    print(f"IP Result: {b2h(ip_res)}")
+    final_cipher_hex = ""
 
-    fk1 = fk(ip_res, k1)
-    
-    switched = fk1[4:] + fk1[:4]
-    print(f"Round 1 (after switch): {b2h(switched)}")
+    for char in msg_str:
+        print(f"\n--- Encrypting '{char}' ---")
+        bits = d2b(ord(char), 8)
+        
+        ip_res = permutate(bits, IP)
+        print(f"IP Result: {b2h(ip_res)}")
 
-    fk2 = fk(switched, k2)
-    print(f"Round 2 (pre-IP inverse): {b2h(fk2)}")
+        fk1 = fk(ip_res, k1)
+        switched = fk1[4:] + fk1[:4]
+        print(f"Round 1 (after switch): {b2h(switched)}")
 
-    ciphertext_bits = permutate(fk2, IP_INV)
-    final_cipher_hex = b2h(ciphertext_bits)
-    
-    print(f"encrypted text: \"{final_cipher_hex}\"")
+        fk2 = fk(switched, k2)
+        print(f"Round 2 (pre-IP inverse): {b2h(fk2)}")
+
+        ciphertext_bits = permutate(fk2, IP_INV)
+        block_hex = b2h(ciphertext_bits)
+        final_cipher_hex += block_hex.zfill(2)
+
+    print(f"\nTotal encrypted text: \"{final_cipher_hex}\"")
 
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
