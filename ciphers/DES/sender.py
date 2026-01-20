@@ -1,7 +1,5 @@
 import socket
 
-# --- Standard DES Tables ---
-
 IP = [
     58, 50, 42, 34, 26, 18, 10, 2, 60, 52, 44, 36, 28, 20, 12, 4,
     62, 54, 46, 38, 30, 22, 14, 6, 64, 56, 48, 40, 32, 24, 16, 8,
@@ -84,8 +82,6 @@ S_BOX = [
 
 SHIFTS = [1, 1, 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 1]
 
-# --- Helpers ---
-
 def h2b(hex_str, n_bits):
     return list(bin(int(hex_str, 16))[2:].zfill(n_bits))
 
@@ -111,61 +107,63 @@ def generate_keys(key_bits):
     keys = []
     key = permutate(key_bits, PC1)
     l, r = key[:28], key[28:]
-    for s in SHIFTS:
+    print("\n[KEY SCHEDULE]")
+    for i, s in enumerate(SHIFTS):
         l = shift(l, s)
         r = shift(r, s)
-        keys.append(permutate(l + r, PC2))
+        k = permutate(l + r, PC2)
+        keys.append(k)
+        print(f"Round {i+1} Key: {b2h(k)}")
+    print("")
     return keys
 
 def feistel(bits, subkey):
-    # E-Box
     expanded = permutate(bits, E)
-    # XOR Key
     xored = xor(expanded, subkey)
-    # S-Boxes
     res = []
     for i in range(8):
-        block = xored[i*6 : (i+1)*6]
+        block = xored[i*6: (i+1)*6]
         row = b2d([block[0], block[5]])
         col = b2d(block[1:5])
         val = S_BOX[i][row][col]
         res.extend(d2b(val, 4))
-    # P-Box
     return permutate(res, P)
 
 def des_block(bits, keys):
     bits = permutate(bits, IP)
+    print(f"IP Result: {b2h(bits)}")
     l, r = bits[:32], bits[32:]
+    
     for i in range(16):
         l_prev, r_prev = l, r
         l = r_prev
         r = xor(l_prev, feistel(r_prev, keys[i]))
-    return permutate(r + l, IP_INV) # R and L switched for final
+        print(f"Round {i+1:02} | L: {b2h(l)} | R: {b2h(r)}")
+        
+    final_bits = permutate(r + l, IP_INV)
+    return final_bits
 
 def sender():
-    msg_str = input("enter message(8 chars): ")
+    msg_str = input("enter message (8 chars): ")
     key_hex = input("enter key(16 hex chars): ")
     
     key_bits = h2b(key_hex, 64)
     keys = generate_keys(key_bits)
-    
     print(f"Key used: {b2h(key_bits)}")
     
-    # Pad or slice to 8 chars
-    if len(msg_str) < 8: msg_str = msg_str.ljust(8)
+    if len(msg_str) < 8:
+        msg_str = msg_str.ljust(8)
     msg_str = msg_str[:8]
     
     print(f"Encrypting block: '{msg_str}'")
-    
     bits = []
     for c in msg_str:
         bits.extend(d2b(ord(c), 8))
         
     cipher_bits = des_block(bits, keys)
     final_hex = b2h(cipher_bits)
-    
     print(f"Encrypted Hex: {final_hex}")
-
+    
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
         s.connect(("localhost", 42069))
